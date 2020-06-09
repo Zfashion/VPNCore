@@ -1,0 +1,2 @@
+src=/Users/tml/work/proj/vpn/any_vpn/app
+cmake -H${src}/src/main/cpp -B${src}/.externalNativeBuild/cmake/normalRelease/armeabi-v7a -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-16 -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${src}/build/intermediates/cmake/normal/release/obj/armeabi-v7a -DCMAKE_BUILD_TYPE=Release -DANDROID_NDK=/Users/tml/Library/Android/sdk/ndk-bundle -DCMAKE_TOOLCHAIN_FILE=/Users/tml/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/Users/tml/Library/Android/sdk/cmake/3.6.4111459/bin/ninja -GAndroid Gradle - Ninja

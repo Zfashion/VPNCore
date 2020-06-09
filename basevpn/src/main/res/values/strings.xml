@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">BaseVPN</string>
+    <string name="bits_per_second">%.0f bit/s</string>
+    <string name="kbits_per_second">%.1f kbit/s</string>
+    <string name="mbits_per_second">%.1f Mbit/s</string>
+    <string name="gbits_per_second">%.1f Gbit/s</string>
+    <string name="volume_byte">%.0f B</string>
+    <string name="volume_kbyte">%.1f KB</string>
+    <string name="volume_mbyte">%.1f MB</string>
+    <string name="volume_gbyte">%.1f GB</string>
+    <string name="statusline_bytecount">↓%2$s %1$s - ↑%4$s %3$s</string>
+    <string name="vpn_connecting" translatable="false">Connecting</string>
+    <string name="vpn_connected" translatable="false">Connected</string>
+</resources>

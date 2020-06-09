@@ -1,0 +1,56 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.protocol.openvpn" >
+
+
+    <application >
+        <service
+            android:name="com.blinkt.openvpn.OpenVPNTileService"
+            android:icon="@drawable/ic_quick"
+            android:label="@string/qs_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:value="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="false" />
+        </service>
+
+        <receiver android:name="com.blinkt.openvpn.OnBootReceiver">
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <meta-data
+            android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/app_restrictions" />
+
+    <!--
+        <receiver android:name="core.GetRestrictionReceiver">
+            <intent-filter>
+            <action android:name="android.intent.action.GET_RESTRICTION_ENTRIES" />
+            </intent-filter>
+        </receiver>
+    -->
+
+    </application>
+
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission android:name="com.android.vending.BILLING" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+</manifest>

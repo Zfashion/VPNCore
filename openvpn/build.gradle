@@ -1,0 +1,63 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+
+
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    boolean usingPreBuildLibs = true
+
+    if (!usingPreBuildLibs) {
+        externalNativeBuild {
+            cmake {
+                path file('src/main/cpp/CMakeLists.txt')
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            if (usingPreBuildLibs) {
+                jni.srcDirs = []
+                jniLibs.srcDirs = ['prebuildLibs']
+            }
+            assets.srcDirs("src/main/assets", "ovpnassets")
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    //mmkv
+    implementation 'com.tencent:mmkv-static:1.0.24'
+    implementation project(path: ':mmkv')
+    implementation project(path: ':util')
+    implementation project(path: ':basevpn')
+}

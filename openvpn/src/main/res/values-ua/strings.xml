@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2013 Pavel Kopchyk
+    Copyright (C) 2012 Dmitry Korzhevin
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.  See <http://www.fsf.org/copyleft/gpl.txt>.
+
+    This program is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+-->
+<resources>
+
+    <!-- Application -->
+
+    <!-- Settings -->
+
+    <!-- Log view -->
+
+    <!-- VPN profile list -->
+
+    <!-- VPN profile details -->
+    <!-- Warnings/Notifications in the details view -->
+
+    <!-- Trusted certificate selection -->
+
+    <!-- VPN state fragment -->
+    <string name="state_connecting">Підключення&#8230;</string>
+    <string name="state_connected">Підключений</string>
+
+    <!-- IMC state fragment -->
+
+    <!-- Remediation instructions -->
+
+    <!-- Dialogs -->
+    <plurals name="retry_in">
+        <item quantity="one">Retry in %1$d second</item>
+        <item quantity="other">Retry in %1$d seconds</item>
+    </plurals>
+
+    <!-- Quick Settings tile -->
+
+</resources>
