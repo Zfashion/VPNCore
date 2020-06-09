@@ -18,7 +18,7 @@ import android.service.quicksettings.TileService;
 import android.widget.Toast;
 
 import com.base.vpn.IVPN;
-import com.base.vpn.VPNLog;
+import com.base.vpn.utils.VPNLog;
 import com.blinkt.openvpn.core.ConnectionStatus;
 import com.blinkt.openvpn.core.ProfileManager;
 import com.blinkt.openvpn.core.VpnStatus;
@@ -60,7 +60,6 @@ public class OpenVPNTileService extends TileService implements VpnStatus.StateLi
                             vpn.disconnect();
                         } catch (Exception e) {
                             VPNLog.e("OpenVPNTileService",e);
-//                            VpnStatus.logException(e);
                         }
 
                     unbindService(this);

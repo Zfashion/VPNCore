@@ -13,10 +13,9 @@ import android.net.NetworkInfo;
 import android.net.NetworkInfo.State;
 import android.os.Handler;
 
-
 import com.base.vpn.IVPN;
+import com.base.vpn.VPNConfig;
 import com.protocol.openvpn.R;
-import com.sino.app.anyvpn.localdata.MMKVLocalData;
 
 import java.util.LinkedList;
 
@@ -44,15 +43,14 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
     private Runnable mDelayDisconnectRunnable = new Runnable() {
         @Override
         public void run() {
-            if (!(network == connectState.PENDINGDISCONNECT))
+            if (!(network == connectState.PENDINGDISCONNECT)) {
                 return;
-
+            }
             network = connectState.DISCONNECTED;
-
             // Set screen state to be disconnected if disconnect pending
-            if (screen == connectState.PENDINGDISCONNECT)
+            if (screen == connectState.PENDINGDISCONNECT) {
                 screen = connectState.DISCONNECTED;
-
+            }
             mManagement.pause(getPauseReason());
         }
     };
@@ -138,7 +136,7 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
         if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
             networkStateChange(context);
         } else if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-            boolean screenOffPause = MMKVLocalData.getDefaultInstance(context,false).getBoolean("screenoff", false);
+            boolean screenOffPause = VPNConfig.dataStore.getBoolean("screenoff", false);
 
             if (screenOffPause) {
                 if (ProfileManager.getLastConnectedVpn() != null && !ProfileManager.getLastConnectedVpn().mPersistTun)
@@ -178,7 +176,7 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
 
     public void networkStateChange(Context context) {
         NetworkInfo networkInfo = getCurrentNetworkInfo(context);
-        boolean sendusr1 = MMKVLocalData.getDefaultInstance(context,false).getBoolean("netchangereconnect", true);
+        boolean sendusr1 = VPNConfig.dataStore.getBoolean("netchangereconnect", true);
 
 
         String netstatestring;
@@ -216,7 +214,7 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             if (lastConnectedNetwork == null
                     || lastConnectedNetwork.getType() != networkInfo.getType()
                     || !equalsObj(lastConnectedNetwork.getExtraInfo(), networkInfo.getExtraInfo())
-                    )
+            )
                 sameNetwork = false;
             else
                 sameNetwork = true;

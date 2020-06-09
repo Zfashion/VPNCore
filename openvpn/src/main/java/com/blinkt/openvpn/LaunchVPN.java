@@ -22,14 +22,14 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import com.base.vpn.VPNConfig;
 import com.blinkt.openvpn.api.ExternalAppDatabase;
 import com.blinkt.openvpn.core.ConnectionStatus;
 import com.blinkt.openvpn.core.ProfileManager;
 import com.blinkt.openvpn.core.VPNLaunchHelper;
 import com.blinkt.openvpn.core.VpnStatus;
+import com.data.IDataStore;
 import com.protocol.openvpn.R;
-import com.sino.app.anyvpn.localdata.LocalData;
-import com.sino.app.anyvpn.localdata.MMKVLocalData;
 
 import java.io.IOException;
 
@@ -93,7 +93,7 @@ public class LaunchVPN extends Activity {
 
         if (Intent.ACTION_MAIN.equals(action)) {
             // Check if we need to clear the log
-            if (MMKVLocalData.getDefaultInstance(this,false).getBoolean(CLEARLOG, true)) {
+            if (VPNConfig.dataStore.getBoolean(CLEARLOG, true)) {
                 VpnStatus.clearLog();
             }
 
@@ -198,7 +198,7 @@ public class LaunchVPN extends Activity {
                     VpnStatus.updateStateString("USER_VPN_PASSWORD", "", R.string.state_user_vpn_password, ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT);
                     askForPW(needpw);
                 } else {
-                    boolean showLogWindow = MMKVLocalData.getDefaultInstance(this,false).getBoolean("showlogwindow", true);
+                    boolean showLogWindow = VPNConfig.dataStore.getBoolean("showlogwindow", true);
                     if (!mhideLog && showLogWindow){
                         showLogWindow();
                     }
@@ -252,9 +252,9 @@ public class LaunchVPN extends Activity {
 
         Intent intent = VpnService.prepare(this);
         // Check if we want to fix /dev/tun
-        LocalData localData = MMKVLocalData.getDefaultInstance(this,false);
-        boolean usecm9fix = localData.getBoolean("useCM9Fix", false);
-        boolean loadTunModule = localData.getBoolean("loadTunModule", false);
+        IDataStore dataStore = VPNConfig.dataStore;
+        boolean usecm9fix = dataStore.getBoolean("useCM9Fix", false);
+        boolean loadTunModule = dataStore.getBoolean("loadTunModule", false);
 
         if (loadTunModule){
             executeSuCmd("insmod /system/lib/modules/tun.ko");

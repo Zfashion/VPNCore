@@ -1,4 +1,4 @@
-package com.base.vpn;
+package com.base.vpn.utils;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,6 +11,8 @@ import android.graphics.BitmapFactory;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+
+import com.base.vpn.VPNConfig;
 
 public class VPNNotificationHelper {
 

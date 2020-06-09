@@ -1,4 +1,4 @@
-package com.obfuscation.annotation;
+package com.proguard.annotation;
 
 import org.junit.Test;
 

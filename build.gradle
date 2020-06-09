@@ -25,3 +25,10 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    // 全局模块配置;vpn测试模式
+    // 1.不受中国地区限制
+    // 2.打印VPN连接日志(tag : VPNLog)
+    VPN_TEST_MODE = true
+}

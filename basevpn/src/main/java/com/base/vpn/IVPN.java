@@ -1,5 +1,7 @@
 package com.base.vpn;
 
+import android.content.Context;
+import android.net.VpnService;
 import android.os.Bundle;
 
 public interface IVPN {
@@ -29,6 +31,12 @@ public interface IVPN {
 
     //--------------------------------------
 
+    interface AppFilter {
+        void applyFilter(Context context, VpnService.Builder builder);
+    }
+
+    //--------------------------------------
+
     void connect(Bundle data);
 
     void disconnect();
@@ -38,6 +46,8 @@ public interface IVPN {
     void addCallback(VPNCallback callback);
 
     void removeCallback(VPNCallback callback);
+
+    void addAppFilter(AppFilter appFilter);
 
     default <T extends IVPNService> boolean hasDestroy(Class<T> clazz) {
         return false;

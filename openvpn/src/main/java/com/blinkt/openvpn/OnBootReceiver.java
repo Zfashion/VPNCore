@@ -9,8 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import com.base.vpn.VPNConfig;
 import com.blinkt.openvpn.core.ProfileManager;
-import com.sino.app.anyvpn.localdata.MMKVLocalData;
 
 
 public class OnBootReceiver extends BroadcastReceiver {
@@ -20,7 +20,7 @@ public class OnBootReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         //PlaceHolderService.startService(context.getApplicationContext());
         final String action = intent.getAction();
-        boolean useStartOnBoot = MMKVLocalData.getDefaultInstance(context, false).getBoolean("restartvpnonboot", false);
+        boolean useStartOnBoot = VPNConfig.dataStore.getBoolean("restartvpnonboot", false);
         if (!useStartOnBoot){
             return;
         }

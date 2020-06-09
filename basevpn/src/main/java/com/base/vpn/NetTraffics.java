@@ -4,8 +4,7 @@ import android.content.res.Resources;
 import android.net.TrafficStats;
 import android.os.Handler;
 import android.os.HandlerThread;
-
-import com.common.utils.TimesUtils;
+import android.os.SystemClock;
 
 import java.util.Vector;
 
@@ -54,7 +53,7 @@ public final class NetTraffics {
             long out = tx - preTxBytes;
             update(in, out, diffin, diffout);
             //Log.w("VPN22","net traffics");
-            TimesUtils.sleep(1000);
+            SystemClock.sleep(1000);
             mHandler.removeCallbacksAndMessages(null);
         }catch (Throwable e){
             e.printStackTrace();

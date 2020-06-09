@@ -8,14 +8,14 @@ package com.blinkt.openvpn.core;
 import android.app.Activity;
 import android.content.Context;
 
+import com.base.vpn.VPNConfig;
 import com.blinkt.openvpn.VpnProfile;
-import com.sino.app.anyvpn.localdata.LocalData;
-import com.sino.app.anyvpn.localdata.MMKVLocalData;
-import com.common.utils.ObjectSerailizeUtils;
+import com.data.IDataStore;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,30 +61,22 @@ public class ProfileManager {
     }
 
     public static void setConntectedVpnProfileDisconnected(Context c) {
-        LocalData.Editor edit = MMKVLocalData.getDefaultInstance(c,false).edit();
-        edit.putString(LAST_CONNECTED_PROFILE, null);
-        edit.apply();
-
+        VPNConfig.dataStore.putString(LAST_CONNECTED_PROFILE, null);
     }
 
     /**
      * Sets the profile that is connected (to connect if the service restarts)
      */
     public static void setConnectedVpnProfile(Context c, VpnProfile connectedProfile) {
-        LocalData localData = MMKVLocalData.getDefaultInstance(c,false);
-        LocalData.Editor edit = localData.edit();
-
-        edit.putString(LAST_CONNECTED_PROFILE, connectedProfile.getUUIDString());
-        edit.apply();
+        VPNConfig.dataStore.putString(LAST_CONNECTED_PROFILE, connectedProfile.getUUIDString());
         mLastConnectedVpn = connectedProfile;
-
     }
 
     /**
      * Returns the profile that was last connected (to connect if the service restarts)
      */
     public static VpnProfile getLastConnectedProfile(Context c) {
-        String lastConnectedProfile = MMKVLocalData.getDefaultInstance(c,false).getString(LAST_CONNECTED_PROFILE, null);
+        String lastConnectedProfile = VPNConfig.dataStore.getString(LAST_CONNECTED_PROFILE, null);
         if (lastConnectedProfile != null)
             return get(c, lastConnectedProfile);
         else
@@ -106,22 +98,17 @@ public class ProfileManager {
     }
 
     public void saveProfileList(Context context) {
-        LocalData localData = MMKVLocalData.getInstance(context,PREFS_NAME, true);
-        LocalData.Editor editor = localData.edit();
-        editor.putStringSet("vpnlist", profiles.keySet());
-
+        IDataStore dataStore = VPNConfig.dataStore;
+        dataStore.putStringSet("vpnlist", profiles.keySet());
         // For reasing I do not understand at all
         // Android saves my prefs file only one time
         // if I remove the debug code below :(
-        int counter = localData.getInt("counter", 0);
-        editor.putInt("counter", counter + 1);
-        editor.apply();
-
+        int counter = dataStore.getInt("counter", 0);
+        dataStore.putInt("counter", counter + 1);
     }
 
     public void addProfile(VpnProfile profile) {
         profiles.put(profile.getUUID().toString(), profile);
-
     }
 
     public static void setTemporaryProfile(Context c, VpnProfile tmp) {
@@ -139,28 +126,36 @@ public class ProfileManager {
     }
 
     private static void saveProfile(Context context, VpnProfile profile, boolean updateVersion, boolean isTemporary) {
-
-        if (updateVersion){
+        if (updateVersion) {
             profile.mVersion += 1;
         }
-
         String filename = profile.getUUID().toString() + ".vp";
-        if (isTemporary){
+        if (isTemporary) {
             filename = TEMPORARY_PROFILE_FILENAME + ".vp";
         }
-
+        ObjectOutputStream outputStream = null;
         try {
             profile.setConnections();
-            ObjectSerailizeUtils.writeObject(context,context.openFileOutput(filename, Activity.MODE_PRIVATE),profile,true);
+            outputStream = new ObjectOutputStream(context.openFileOutput(filename, Activity.MODE_PRIVATE));
+            outputStream.writeObject(profile);
+            outputStream.flush();
         } catch (Exception e) {
             VpnStatus.logException("saving VPN profile", e);
             throw new RuntimeException(e);
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
+
     public static boolean isVpnProfileExist(Context context){
         try {
-            LocalData localData = MMKVLocalData.getInstance(context,PREFS_NAME, true);
-            Set<String> vlist = localData.getStringSet("vpnlist", null);
+            Set<String> vlist = VPNConfig.dataStore.getStringSet("vpnlist", null);
             if (vlist != null && vlist.size() >= 1) {
                 for( String vpnentry : vlist) {
                     try {
@@ -180,8 +175,7 @@ public class ProfileManager {
 
     public void loadVPNList(Context context) {
         profiles = new HashMap<>();
-        LocalData localData = MMKVLocalData.getInstance(context,PREFS_NAME, true);
-        Set<String> vlist = localData.getStringSet("vpnlist", null);
+        Set<String> vlist = VPNConfig.dataStore.getStringSet("vpnlist", null);
         if (vlist == null) {
             vlist = new HashSet<>();
         }
@@ -189,18 +183,16 @@ public class ProfileManager {
         vlist.add(TEMPORARY_PROFILE_FILENAME);
 
         for (String vpnentry : vlist) {
-            ObjectInputStream vpnfile=null;
-            try {/*
+            ObjectInputStream vpnfile = null;
+            try {
                 vpnfile = new ObjectInputStream(context.openFileInput(vpnentry + ".vp"));
-                VpnProfile vp = ((VpnProfile) vpnfile.readObject());*/
-
-                VpnProfile vp = (VpnProfile)ObjectSerailizeUtils.readObject(context,context.openFileInput(vpnentry + ".vp"),true);
+                VpnProfile vp = ((VpnProfile) vpnfile.readObject());
                 vp.setmUuid();
                 vp.resetConnections();
                 // Sanity check
-                if (vp == null || vp.mName == null || vp.getUUID() == null)
+                if (vp == null || vp.mName == null || vp.getUUID() == null) {
                     continue;
-
+                }
                 vp.upgradeProfile();
                 if (vpnentry.equals(TEMPORARY_PROFILE_FILENAME)) {
                     tmpprofile = vp;
@@ -208,12 +200,11 @@ public class ProfileManager {
                     profiles.put(vp.getUUID().toString(), vp);
                 }
 
-
             } catch (Exception e) {
                 if (!vpnentry.equals(TEMPORARY_PROFILE_FILENAME))
                     VpnStatus.logException("Loading VPN List", e);
             } finally {
-                if (vpnfile!=null) {
+                if (vpnfile != null) {
                     try {
                         vpnfile.close();
                     } catch (IOException e) {
@@ -268,7 +259,7 @@ public class ProfileManager {
 
     public static VpnProfile getAlwaysOnVPN(Context context) {
         checkInstance(context);
-        String uuid = MMKVLocalData.getDefaultInstance(context,false).getString("alwaysOnVpn", null);
+        String uuid = VPNConfig.dataStore.getString("alwaysOnVpn", null);
         return get(uuid);
 
     }

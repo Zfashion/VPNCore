@@ -9,7 +9,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import com.base.vpn.VPNLog;
+import com.base.vpn.utils.VPNLog;
 
 import java.math.BigInteger;
 import java.net.Inet6Address;

@@ -1,4 +1,4 @@
-package com.base.vpn;
+package com.base.vpn.utils;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -8,7 +8,7 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.base.vpn.utils.VPNAppListUtil;
+import com.base.vpn.BuildConfig;
 import com.data.DataStore;
 
 import java.util.ArrayList;

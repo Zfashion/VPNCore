@@ -1,6 +1,8 @@
-package com.base.vpn;
+package com.base.vpn.utils;
 
 import android.util.Log;
+
+import com.base.vpn.BuildConfig;
 
 public class VPNLog {
 

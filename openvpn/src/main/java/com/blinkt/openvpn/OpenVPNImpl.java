@@ -34,9 +34,8 @@ import androidx.annotation.RequiresApi;
 
 import com.base.vpn.IVPN;
 import com.base.vpn.IVPNService;
-import com.base.vpn.VPNAppFilterHelper;
 import com.base.vpn.VPNConfig;
-import com.base.vpn.VPNNotificationHelper;
+import com.base.vpn.utils.VPNNotificationHelper;
 import com.blinkt.openvpn.core.CIDRIP;
 import com.blinkt.openvpn.core.Connection;
 import com.blinkt.openvpn.core.ConnectionStatus;
@@ -49,8 +48,8 @@ import com.blinkt.openvpn.core.OpenVpnManagementThread;
 import com.blinkt.openvpn.core.ProfileManager;
 import com.blinkt.openvpn.core.VPNLaunchHelper;
 import com.blinkt.openvpn.core.VpnStatus;
+import com.proguard.annotation.NotProguard;
 import com.protocol.openvpn.R;
-import com.common.utils.annos.NotProguard;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -114,6 +113,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private Vector<VPNCallback> mCallbacks;
     private VpnServiceBuilderCreator mBuilderCreator;
     private String mServerNodeName;
+    private IVPN.AppFilter mAppFilter;
     public static Class vpnServiceClass;
 
     public OpenVPNImpl(@NonNull VpnService mVpnService) {
@@ -262,6 +262,11 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
         if (callback != null && mCallbacks.indexOf(callback) != -1) {
             mCallbacks.remove(callback);
         }
+    }
+
+    @Override
+    public void addAppFilter(AppFilter appFilter) {
+        mAppFilter = appFilter;
     }
 
     @Override
@@ -803,7 +808,9 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             }
         }
 
-        new VPNAppFilterHelper(getClass().getName()).applyFilter(mContext, builder);
+        if (mAppFilter != null) {
+            mAppFilter.applyFilter(mContext, builder);
+        }
 
         if (mProfile.mAllowAppVpnBypass) {
             builder.allowBypass();

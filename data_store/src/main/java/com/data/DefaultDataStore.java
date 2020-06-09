@@ -1,4 +1,4 @@
-package com.base.data;
+package com.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;

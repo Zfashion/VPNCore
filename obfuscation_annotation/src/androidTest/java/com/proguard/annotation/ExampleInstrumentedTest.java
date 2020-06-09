@@ -1,4 +1,4 @@
-package com.obfuscation.annotation;
+package com.proguard.annotation;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.obfuscation.annotation.test", appContext.getPackageName());
+        assertEquals("com.proguard.annotation.test", appContext.getPackageName());
     }
 }

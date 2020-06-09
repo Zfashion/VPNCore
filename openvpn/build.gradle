@@ -2,12 +2,10 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 29
-    buildToolsVersion "29.0.2"
-
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 29
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
@@ -27,7 +25,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
     }
 
-    boolean usingPreBuildLibs = true
+    boolean usingPreBuildLibs = false
 
     if (!usingPreBuildLibs) {
         externalNativeBuild {
@@ -55,9 +53,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    //mmkv
-    implementation 'com.tencent:mmkv-static:1.0.24'
-    implementation project(path: ':mmkv')
-    implementation project(path: ':util')
+
+    implementation project(path: ':data_store')
     implementation project(path: ':basevpn')
+    implementation project(path: ':obfuscation_annotation')
 }

@@ -20,6 +20,7 @@ import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.base.vpn.VPNConfig;
 import com.blinkt.openvpn.core.Connection;
 import com.blinkt.openvpn.core.ExtAuthHelper;
 import com.blinkt.openvpn.core.NativeUtils;
@@ -29,7 +30,6 @@ import com.blinkt.openvpn.core.VPNLaunchHelper;
 import com.blinkt.openvpn.core.VpnStatus;
 import com.blinkt.openvpn.core.X509Utils;
 import com.protocol.openvpn.R;
-import com.sino.app.anyvpn.localdata.MMKVLocalData;
 import com.spongycastle.util.pem.PemObject;
 import com.spongycastle.util.pem.PemWriter;
 
@@ -192,8 +192,9 @@ public class VpnProfile implements Serializable, Cloneable {
         mLastUsed = System.currentTimeMillis();
     }
     public void setmUuid(){
-        if(!TextUtils.isEmpty(uuidStr))
+        if(!TextUtils.isEmpty(uuidStr)){
             mUuid = UUID.fromString(uuidStr);
+        }
     }
     public static String openVpnEscape(String unescaped) {
         if (unescaped == null)
@@ -633,7 +634,7 @@ public class VpnProfile implements Serializable, Cloneable {
         if (mPushPeerInfo)
             cfg.append("push-peer-info\n");
 
-        boolean usesystemproxy = MMKVLocalData.getDefaultInstance(context,false).getBoolean("usesystemproxy", true);
+        boolean usesystemproxy = VPNConfig.dataStore.getBoolean("usesystemproxy", true);
         if (usesystemproxy && !mIsOpenVPN22 && !usesExtraProxyOptions()) {
             cfg.append("# Use system proxy setting\n");
             cfg.append("management-query-proxy\n");

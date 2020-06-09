@@ -1,7 +1,5 @@
-package com.obfuscation.annotation;
+package com.proguard.annotation;
 
-
-import com.common.utils.annos.NotProguard;
 
 @NotProguard
 public interface IMembers {

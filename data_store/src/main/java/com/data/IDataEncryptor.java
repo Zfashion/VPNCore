@@ -1,4 +1,4 @@
-package com.base.data;
+package com.data;
 
 public interface IDataEncryptor {
 

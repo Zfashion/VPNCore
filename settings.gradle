@@ -1,2 +1,6 @@
-include ':app'
-rootProject.name='VPNCore'
+//include ':app'
+include ':obfuscation_annotation'
+include ':data_store'
+include ':basevpn'
+include ':openvpn'
+rootProject.name = 'VPNCore'
