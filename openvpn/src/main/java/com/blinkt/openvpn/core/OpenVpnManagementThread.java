@@ -409,9 +409,9 @@ public class OpenVpnManagementThread implements Runnable, OpenVPNManagement {
         mWaitingForRelease = true;
         int waittime = Integer.parseInt(argument.split(":")[1]);
         if (shouldBeRunning()) {
-            if (waittime > 1)
-                VpnStatus.updateStateString("CONNECTRETRY", String.valueOf(waittime),
-                        R.string.state_waitconnectretry, ConnectionStatus.LEVEL_CONNECTING_NO_SERVER_REPLY_YET);
+            if (waittime > 1){
+                VpnStatus.updateStateString("CONNECTRETRY", String.valueOf(waittime), R.string.state_waitconnectretry, ConnectionStatus.LEVEL_CONNECTING_NO_SERVER_REPLY_YET);
+            }
             mResumeHandler.postDelayed(mResumeHoldRunnable, waittime * 1000);
             if (waittime > 5)
                 VpnStatus.logInfo(R.string.state_waitconnectretry, String.valueOf(waittime));
@@ -495,14 +495,12 @@ public class OpenVpnManagementThread implements Runnable, OpenVPNManagement {
         if (proxyType == Connection.ProxyType.ORBOT) {
             VpnStatus.updateStateString("WAIT_ORBOT", "Waiting for Orbot to start", R.string.state_waitorbot, ConnectionStatus.LEVEL_CONNECTING_NO_SERVER_REPLY_YET);
             OrbotHelper orbotHelper = OrbotHelper.get();
-            if (!orbotHelper.checkTorReceier(mOpenVPNImpl.getContext()))
+            if (!orbotHelper.checkTorReceier(mOpenVPNImpl.getContext())){
                 VpnStatus.logError("Orbot does not seem to be installed!");
-
+            }
             mResumeHandler.postDelayed(orbotStatusTimeOutRunnable, ORBOT_TIMEOUT_MS);
             orbotHelper.addStatusCallback(mOpenVPNImpl.getContext(), statusCallback);
-
             orbotHelper.sendOrbotStartAndStatusBroadcast();
-
         } else {
             sendProxyCMD(proxyType, proxyname, proxyport, proxyUseAuth);
         }

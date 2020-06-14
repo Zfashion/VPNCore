@@ -434,9 +434,11 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     @RequiresApi(Build.VERSION_CODES.N_MR1)
     private void updateShortCutUsage(VpnProfile profile) {
-        if (profile == null)
+        if (profile == null) {
             return;
+        }
         ShortcutManager shortcutManager = mContext.getSystemService(ShortcutManager.class);
+        //noinspection ConstantConditions
         shortcutManager.reportShortcutUsed(profile.getUUIDString());
     }
 
@@ -974,37 +976,30 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             //showNotification(VpnStatus.getLastCleanLogMessage(mContext), VpnStatus.getLastCleanLogMessage(mContext), channel, 0, level);
         }
     }
-
-    private boolean isServerReply = false;
-
+    private boolean isStarting = false;
     private void stateTransform(ConnectionStatus level) {
         switch (level) {
             case LEVEL_CONNECTED:
-                isServerReply = true;
+                isStarting = true;
                 VPNNotificationHelper.connected(mVpnService, mServerNodeName, mContext.getResources().getString(R.string.vpn_connected), NOTIFICATION_CHANNEL_NEWSTATUS_ID, NOTIFICATION_ID);
                 stateChange(VPNState.CONNECTED);
                 break;
             case LEVEL_NONETWORK:
             case LEVEL_NOTCONNECTED:
-                if (isServerReply) {
-                    isServerReply = false;
+                if (isStarting){
                     stateChange(VPNState.DISCONNECTED);
                 }
                 break;
             case LEVEL_AUTH_FAILED:
             case LEVEL_CONNECTING_NO_SERVER_REPLY_YET:
-                isServerReply = false;
+                isStarting = true;
                 stateChange(VPNState.CONNECT_FAIL);
                 break;
-            case LEVEL_CONNECTING_SERVER_REPLIED: {
-                isServerReply = true;
-                stateChange(VPNState.CONNECTING);
-            }
-            break;
+            case LEVEL_CONNECTING_SERVER_REPLIED:
             case LEVEL_WAITING_FOR_USER_INPUT:
-            case LEVEL_START: {
+            case LEVEL_START:
+                isStarting = true;
                 stateChange(VPNState.CONNECTING);
-            }
             break;
         }
     }

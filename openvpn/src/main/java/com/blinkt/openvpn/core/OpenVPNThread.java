@@ -8,8 +8,8 @@ package com.blinkt.openvpn.core;
 import android.annotation.SuppressLint;
 import android.util.Log;
 
-import com.protocol.openvpn.R;
 import com.blinkt.openvpn.OpenVPNImpl;
+import com.protocol.openvpn.R;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

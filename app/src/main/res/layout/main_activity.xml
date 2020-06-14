@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:padding="20dp"
+        android:text="NONE STATE"
+        android:textColor="@android:color/white" />
+
+
+    <LinearLayout
+        android:layout_marginTop="20dp"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="IP地址: "
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/ip"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:hint="输入IP"
+            android:lines="1"
+            android:maxLines="1"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="端口: "
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/port"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:hint="输入端口"
+            android:lines="1"
+            android:maxLines="1"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <RadioGroup
+        android:id="@+id/vpn_type"
+        android:layout_marginTop="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/tcp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TCP" />
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/udp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UDP" />
+
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/ikev2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="IKEV2" />
+
+    </RadioGroup>
+
+
+    <Button
+        android:id="@+id/connect"
+        android:layout_width="140dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="30dp"
+        android:onClick="connect"
+        android:text="Connect" />
+
+    <Button
+        android:enabled="false"
+        android:id="@+id/disconnect"
+        android:layout_width="140dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="30dp"
+        android:onClick="disconnect"
+        android:text="DisConnect" />
+
+
+</LinearLayout>

@@ -1,4 +1,4 @@
-//include ':app'
+include ':app'
 include ':obfuscation_annotation'
 include ':data_store'
 include ':basevpn'

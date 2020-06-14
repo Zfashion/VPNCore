@@ -35,13 +35,13 @@ public class ProfileManager {
 
 
     private static VpnProfile get(String key) {
-        if (tmpprofile != null && tmpprofile.getUUIDString().equals(key))
+        if (tmpprofile != null && tmpprofile.getUUIDString().equals(key)) {
             return tmpprofile;
-
-        if (instance == null)
+        }
+        if (instance == null) {
             return null;
+        }
         return instance.profiles.get(key);
-
     }
 
 
@@ -77,10 +77,12 @@ public class ProfileManager {
      */
     public static VpnProfile getLastConnectedProfile(Context c) {
         String lastConnectedProfile = VPNConfig.dataStore.getString(LAST_CONNECTED_PROFILE, null);
-        if (lastConnectedProfile != null)
+        if (lastConnectedProfile != null) {
             return get(c, lastConnectedProfile);
-        else
+
+        } else {
             return null;
+        }
     }
 
 
@@ -118,7 +120,7 @@ public class ProfileManager {
     }
 
     public static boolean isTempProfile() {
-        return mLastConnectedVpn != null && mLastConnectedVpn  == tmpprofile;
+        return mLastConnectedVpn != null && mLastConnectedVpn == tmpprofile;
     }
 
     public void saveProfile(Context context, VpnProfile profile) {
@@ -153,21 +155,21 @@ public class ProfileManager {
         }
     }
 
-    public static boolean isVpnProfileExist(Context context){
+    public static boolean isVpnProfileExist(Context context) {
         try {
             Set<String> vlist = VPNConfig.dataStore.getStringSet("vpnlist", null);
             if (vlist != null && vlist.size() >= 1) {
-                for( String vpnentry : vlist) {
+                for (String vpnentry : vlist) {
                     try {
                         FileInputStream in = context.openFileInput(vpnentry + ".vp");
                         in.close();
                         return true;
-                    }catch (Exception e){
+                    } catch (Exception e) {
 
                     }
                 }
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
@@ -244,9 +246,7 @@ public class ProfileManager {
             int ver = profile == null ? -1 : profile.mVersion;
         }
 
-        if (tried > 5)
-
-        {
+        if (tried > 5) {
             int ver = profile == null ? -1 : profile.mVersion;
             VpnStatus.logError(String.format(Locale.US, "Used x %d tries to get current version (%d/%d) of the profile", tried, ver, version));
         }

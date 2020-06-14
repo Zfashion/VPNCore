@@ -121,9 +121,7 @@ public class OrbotHelper {
         Intent startOrbot = getOrbotStartIntent(c);
         PackageManager pm = c.getPackageManager();
         Intent result = null;
-        List<ResolveInfo> receivers =
-                pm.queryBroadcastReceivers(startOrbot, 0);
-
+        List<ResolveInfo> receivers = pm.queryBroadcastReceivers(startOrbot, 0);
         return receivers != null && receivers.size() > 0;
     }
 
