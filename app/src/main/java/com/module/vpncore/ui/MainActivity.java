@@ -2,7 +2,6 @@ package com.module.vpncore.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
@@ -15,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.base.vpn.IVPN;
+import com.base.vpn.VPNConfig;
 import com.module.vpncore.R;
 import com.module.vpncore.vpn.IVPNOperation;
 import com.module.vpncore.vpn.VPNInstance;
@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements IVPN.VPNCallback 
     private RadioGroup mRadioGroup;
     private Button mConnect;
     private Button mDisconnect;
+    private Button mAppProxy;
 
     private static final int UDP_TYPE = 0;
     private static final int TCP_TYPE = 1;
@@ -121,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements IVPN.VPNCallback 
         mConnect = findViewById(R.id.connect);
         mDisconnect = findViewById(R.id.disconnect);
         mState = findViewById(R.id.state);
+        mAppProxy = findViewById(R.id.app_proxy);
 
         mInputIP.setText(getCacheIP());
         mInputPort.setText(getCachePort());
@@ -249,33 +251,33 @@ public class MainActivity extends AppCompatActivity implements IVPN.VPNCallback 
         }
         mInputPort.setEnabled(enable);
         mInputIP.setEnabled(enable);
-
+        mAppProxy.setEnabled(enable);
         mConnect.setEnabled(enable);
         mDisconnect.setEnabled(!enable);
     }
 
     private String getCachePort() {
-        return PreferenceManager.getDefaultSharedPreferences(this).getString("port", "");
+        return VPNConfig.dataStore.getString("port", "");
     }
 
     private String getCacheIP() {
-        return PreferenceManager.getDefaultSharedPreferences(this).getString("ip", "");
+        return VPNConfig.dataStore.getString("ip", "");
     }
 
     private int getCacheVPNType() {
-        return PreferenceManager.getDefaultSharedPreferences(this).getInt("vpn_type", 0);
+        return VPNConfig.dataStore.getInt("vpn_type", UDP_TYPE);
     }
 
     private void saveIP(String ip) {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("ip", ip).apply();
+        VPNConfig.dataStore.putString("ip", ip);
     }
 
     private void savePort(String port) {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("port", port).apply();
+        VPNConfig.dataStore.putString("port", port);
     }
 
     private void saveType(int type) {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putInt("vpn_type", type).apply();
+        VPNConfig.dataStore.putInt("vpn_type", type);
     }
 
     @Override
@@ -291,5 +293,9 @@ public class MainActivity extends AppCompatActivity implements IVPN.VPNCallback 
             enableView(false);
         }
         mState.setText(VPNInstance.get().getState().name());
+    }
+
+    public void appProxy(View view) {
+        startActivity(new Intent(this,AppProxyActivity.class));
     }
 }

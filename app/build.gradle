@@ -35,4 +35,5 @@ dependencies {
     implementation project(path: ':basevpn')
     implementation project(path: ':openvpn')
     implementation project(path: ':ikev2')
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
 }

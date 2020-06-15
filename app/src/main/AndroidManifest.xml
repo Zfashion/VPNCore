@@ -32,6 +32,8 @@
 
         <service android:name="com.blinkt.openvpn.OpenVPNTileService" />
 
+        <activity android:name=".ui.AppProxyActivity"/>
+
     </application>
 
 </manifest>

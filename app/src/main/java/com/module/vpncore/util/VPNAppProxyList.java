@@ -1,26 +1,22 @@
 package com.module.vpncore.util;
 
-import android.content.Context;
-
-import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 
 import com.base.vpn.utils.VPNLog;
 import com.data.IDataStore;
 
-import java.util.HashSet;
 import java.util.Set;
 
-public class VPNAppListUtil {
+public class VPNAppProxyList {
 
     private static final String APP_LIST = "app_list";
     private IDataStore mDataStore;
 
-    public VPNAppListUtil(IDataStore mDataStore) {
+    public VPNAppProxyList(IDataStore mDataStore) {
         this.mDataStore = mDataStore;
     }
 
-    public void setAllowedApps(@NonNull Context context, HashSet<String> pkgs) {
+    public void setAllowedApps(Set<String> pkgs) {
         try {
             mDataStore.putStringSet(APP_LIST, pkgs);
         } catch (Throwable e) {
@@ -28,7 +24,7 @@ public class VPNAppListUtil {
         }
     }
 
-    public void clearAllowedApps(@NonNull Context context) {
+    public void clearAllowedApps() {
         try {
             mDataStore.remove(APP_LIST);
         } catch (Throwable e) {
@@ -36,12 +32,12 @@ public class VPNAppListUtil {
         }
     }
 
-    public Set<String> getAllowedApps(Context context) {
+    public Set<String> getAllowedApps() {
         try {
-            mDataStore.getStringSet(APP_LIST, new ArraySet<>());
+            return mDataStore.getStringSet(APP_LIST, new ArraySet<>());
         } catch (Throwable e) {
             VPNLog.e("getAllowedApps : ", e);
         }
-        return null;
+        return new ArraySet<>();
     }
 }

@@ -205,6 +205,7 @@ public class Ikev2VPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.
             VPNLog.d("service bind success!");
             mVPN = ((Ikev2VPNImpl.Ikev2VPNHandleBinder) service).getVPNService();
             mVPN.addCallback(Ikev2VPNOperation.this);
+            mVPN.addAppFilter(Ikev2VPNOperation.this);
             /**
              *  根据实际业务设置通知管理器
              *

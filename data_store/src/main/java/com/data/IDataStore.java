@@ -33,7 +33,6 @@ public interface IDataStore {
 
     Set<String> getStringSet(String key, Set<String> defaultValue);
 
-
     boolean contains(String key);
 
     boolean remove(String key);

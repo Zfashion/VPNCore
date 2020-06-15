@@ -7,8 +7,8 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import com.base.vpn.VPNConfig;
 import com.base.vpn.utils.VPNLog;
-import com.data.DataStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,7 @@ public class VPNAppFilterHelper {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void applyFilter(Context context, VpnService.Builder builder) {
         VPNLog.d("applyFilter :" + VPN_SERVICE);
-        Set<String> allowedApps = new VPNAppListUtil(new DataStore.Builder(context).build()).getAllowedApps(context);
+        Set<String> allowedApps = new VPNAppProxyList(VPNConfig.dataStore).getAllowedApps();
         if (allowedApps != null && allowedApps.size() > 0) {
             List<String> finalList = new ArrayList<>();
             finalList.add(context.getPackageName());//包含自己

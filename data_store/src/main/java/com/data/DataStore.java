@@ -6,7 +6,9 @@ import android.text.TextUtils;
 import androidx.collection.ArraySet;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 public class DataStore implements IDataStore {
@@ -17,7 +19,6 @@ public class DataStore implements IDataStore {
     private String DATA_TYPE_FLOAT = "_float";
     private String DATA_TYPE_BOOLEAN = "_boolean";
     private String DATA_TYPE_SET = "_set";
-    private String DATA_TYPE_STRING = "_string";//none
 
     private Context mContext;
     private IDataStore mDataStore;
@@ -130,13 +131,35 @@ public class DataStore implements IDataStore {
     }
 
     @Override
-    public boolean contains(String key) {
-        return mDataStore.contains(key);
+    public boolean contains(String originKey) {
+        List<String> keys = new ArrayList<>();
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_INT));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_LONG));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_FLOAT));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_BOOLEAN));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_SET));
+        for (String key : keys) {
+            if (mDataStore.contains(key)) {
+                return true;
+            }
+        }
+        return mDataStore.remove(originKey);
     }
 
     @Override
-    public boolean remove(String key) {
-        return mDataStore.remove(key);
+    public boolean remove(String originKey) {
+        List<String> keys = new ArrayList<>();
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_INT));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_LONG));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_FLOAT));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_BOOLEAN));
+        keys.add(assembleInternalKey(originKey, DATA_TYPE_SET));
+        for (String key : keys) {
+            if (mDataStore.contains(key)){
+                return mDataStore.remove(key);
+            }
+        }
+        return mDataStore.remove(originKey);
     }
 
     @Override
