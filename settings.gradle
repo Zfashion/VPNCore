@@ -3,4 +3,7 @@ include ':obfuscation_annotation'
 include ':data_store'
 include ':basevpn'
 include ':openvpn'
+include 'ikev2'
+project(':ikev2').projectDir = new File('./strongswan/src/frontends/android/app')
 rootProject.name = 'VPNCore'
+

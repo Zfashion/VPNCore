@@ -11,7 +11,9 @@ import com.base.vpn.VPNConfig;
 import com.blinkt.openvpn.OpenVPNImpl;
 import com.data.DataStore;
 
-public class App extends Application {
+import org.ikev2.android.logic.StrongSwanApplication;
+
+public class App extends StrongSwanApplication {
     @Override
     public void onCreate() {
         super.onCreate();
@@ -26,7 +28,10 @@ public class App extends Application {
         VPNConfig.notification_small_icon_res = R.mipmap.ic_launcher;
 
         VPNConfig.pendingIntentClass = MainActivity.class;
+
         createNotificationChannels();
+
+        VPNInstance.get().init(this);
     }
 
     @TargetApi(Build.VERSION_CODES.O)

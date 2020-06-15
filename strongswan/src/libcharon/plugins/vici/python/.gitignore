@@ -1,0 +1,6 @@
+.tox
+*.pyc
+build
+dist
+vici.egg-info
+setup.py

@@ -34,4 +34,5 @@ dependencies {
     implementation project(path: ':data_store')
     implementation project(path: ':basevpn')
     implementation project(path: ':openvpn')
+    implementation project(path: ':ikev2')
 }

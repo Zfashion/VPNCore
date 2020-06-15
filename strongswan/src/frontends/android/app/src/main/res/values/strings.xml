@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">ikev2</string>
+    <!-- ikev2  -->
+    <string name="error_lookup_failed">Server address lookup failed</string>
+    <string name="error_unreachable">Server is unreachable</string>
+    <string name="error_peer_auth_failed">Verifying server authentication failed</string>
+    <string name="error_auth_failed">User authentication failed</string>
+    <string name="error_assessment_failed">Security assessment failed</string>
+    <string name="error_generic">Unspecified failure while connecting</string>
+    <string name="error_password_missing">Password unavailable</string>
+    <string name="error_certificate_unavailable">Client certificate unavailable</string>
+    <string name="vpn_not_supported_during_lockdown">VPN connections are not supported if a built-in VPN has the always-on feature enabled.</string>
+
+    <!-- ikev2   -->
+    <string name="vpn_not_supported">Your device does not support VPN applications.\nPlease contact the manufacturer.</string>
+    <string name="permanent_notification_name">VPN connection state</string>
+    <string name="permanent_notification_description">Provides information about the VPN connection state and serves as permanent notification to keep the VPN service running in the background.</string>
+
+
+</resources>

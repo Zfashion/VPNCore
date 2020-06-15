@@ -16,6 +16,8 @@ import com.base.vpn.utils.VPNLog;
 import com.base.vpn.utils.VPNNotificationHelper;
 import com.blinkt.openvpn.OpenVPNImpl;
 
+import org.ikev2.android.logic.Ikev2VPNImpl;
+
 import java.util.Set;
 
 public class VPNService extends VpnService implements IVPNService.VpnServiceBuilderCreator, IVPN {
@@ -168,18 +170,18 @@ public class VPNService extends VpnService implements IVPNService.VpnServiceBuil
                             mVPNImpl = vpnService;
                         }
                         break;
-//                    case IVPNService.VPN_TYPE_IKEV2:
-//                        if (vpnService != null && !(vpnService instanceof Ikev2VPNImpl)) {
-//                            vpnService.onDestroy();
-//                            vpnService = null;
-//                        }
-//                        if (vpnService == null) {
-//                            vpnService = new Ikev2VPNImpl(this);
-//                            vpnService.addBuilderCreator(this);
-//                            vpnService.onCreate();//初始化
-//                            mVPNImpl = vpnService;
-//                        }
-//                        break;
+                    case IVPNService.VPN_TYPE_IKEV2:
+                        if (vpnService != null && !(vpnService instanceof Ikev2VPNImpl)) {
+                            vpnService.onDestroy();
+                            vpnService = null;
+                        }
+                        if (vpnService == null) {
+                            vpnService = new Ikev2VPNImpl(this);
+                            vpnService.addBuilderCreator(this);
+                            vpnService.onCreate();//初始化
+                            mVPNImpl = vpnService;
+                        }
+                        break;
                 }
             }
         return vpnService;
@@ -187,7 +189,22 @@ public class VPNService extends VpnService implements IVPNService.VpnServiceBuil
 
     @Override
     public boolean onUnbind(Intent intent) {
-        VPNLog.d("VPNService:onUnbind " + this);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(this);
+        stringBuilder.append("\n");
+        if (intent.getExtras() != null) {
+            Bundle bundle = intent.getExtras();
+            Set<String> set = bundle.keySet();
+            for (String key : set) {
+                stringBuilder.append(key);
+                stringBuilder.append(":");
+                stringBuilder.append(bundle.get(key));
+                stringBuilder.append("; \n");
+            }
+            stringBuilder.append("action:");
+            stringBuilder.append(intent.getAction());
+        }
+        VPNLog.d("VPNService:onUnbind " + stringBuilder.toString());
         return super.onUnbind(intent);
     }
 }
