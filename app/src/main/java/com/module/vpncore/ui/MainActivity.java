@@ -1,4 +1,4 @@
-package com.module.vpncore;
+package com.module.vpncore.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,7 +15,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.base.vpn.IVPN;
-import com.base.vpn.utils.VPNLog;
+import com.module.vpncore.R;
+import com.module.vpncore.vpn.IVPNOperation;
+import com.module.vpncore.vpn.VPNInstance;
 
 public class MainActivity extends AppCompatActivity implements IVPN.VPNCallback {
 

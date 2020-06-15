@@ -1,10 +1,11 @@
-package com.base.vpn.utils;
+package com.module.vpncore.util;
 
 import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 
+import com.base.vpn.utils.VPNLog;
 import com.data.IDataStore;
 
 import java.util.HashSet;

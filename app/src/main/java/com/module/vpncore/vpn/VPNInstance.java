@@ -1,4 +1,4 @@
-package com.module.vpncore;
+package com.module.vpncore.vpn;
 
 import android.app.Activity;
 import android.content.Context;
@@ -38,7 +38,6 @@ public class VPNInstance implements IVPNOperation {
 
     public void init(Context context) {
         mVpnOperations[0] = new OpenVPNOperation(context);
-
         mVpnOperations[1] = new Ikev2VPNOperation(context);
     }
 

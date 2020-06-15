@@ -1,4 +1,4 @@
-package com.base.vpn.utils;
+package com.module.vpncore.util;
 
 import java.util.ArrayList;
 import java.util.List;

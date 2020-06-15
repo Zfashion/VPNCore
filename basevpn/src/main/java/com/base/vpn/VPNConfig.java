@@ -3,9 +3,12 @@ package com.base.vpn;
 import com.data.IDataStore;
 
 public class VPNConfig {
-    public static Class pendingIntentClass;
-    public static int notification_small_icon_res;
-    public static int notification_connecting_color_res;
-    public static int notification_connected_color_res;
+    //VPNService 承载类
+    public static Class ikev2VPNServiceClass;
+    public static Class openVPNServiceClass;
+    //VpnService Activity pendingIntent
+    public static Class ikev2VPNActivityPendingClass;
+    public static Class openVPNActivityPendingClass;
+    //数据存储 主要是open vpn在用
     public static IDataStore dataStore;
 }

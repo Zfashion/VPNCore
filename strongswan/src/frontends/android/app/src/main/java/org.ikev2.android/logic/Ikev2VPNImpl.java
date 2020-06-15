@@ -1,9 +1,6 @@
 package org.ikev2.android.logic;
 
 import android.annotation.TargetApi;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -32,7 +29,6 @@ import com.base.vpn.IVPNService;
 import com.base.vpn.NetTraffics;
 import com.base.vpn.VPNConfig;
 import com.base.vpn.utils.VPNLog;
-import com.base.vpn.utils.VPNNotificationHelper;
 import com.proguard.annotation.IClassName;
 import com.proguard.annotation.IPublic;
 import com.proguard.annotation.NotProguard;
@@ -121,25 +117,22 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
     private static final long TIME_OUT = 5000L;
     private static final int TIMEOUT_RETRIES = 2;//最多重试两次
     private int retries = 0;
-    public static Class vpnServiceClass;
 	private AppFilter mAppFilter;
+	private INotificationManager mNotificationManager;
 
 	@Override
-    public void updateByteCount(long in, long out, long diffIn, long diffOut) {
-        if (mState == State.CONNECTED) {
-            Resources resources = mContext.getResources();
-            String netstat = String.format(mContext.getString(R.string.statusline_bytecount),
-                    NetTraffics.humanReadableByteCount(in, false, resources),
-                    NetTraffics.humanReadableByteCount(diffIn / 2, true, mContext.getResources()),
-                    NetTraffics.humanReadableByteCount(out, false, resources),
-                    NetTraffics.humanReadableByteCount(diffOut / 2, true, mContext.getResources()));
-            String title = mCurrentProfile.getName();
-            if (TextUtils.isEmpty(title)) {
-                title = resources.getString(mContext.getApplicationInfo().labelRes);
-            }
-            VPNNotificationHelper.connected(mVpnService, title, netstat, NOTIFICATION_CHANNEL, VPN_STATE_NOTIFICATION_ID);
-        }
-    }
+	public void updateByteCount(long in, long out, long diffIn, long diffOut) {
+		if (mState == State.CONNECTED) {
+			Resources resources = mContext.getResources();
+			String title = mCurrentProfile.getName();
+			if (TextUtils.isEmpty(title)) {
+				title = resources.getString(mContext.getApplicationInfo().labelRes);
+			}
+			if (mNotificationManager != null) {
+				mNotificationManager.byteCountChange(mVpnService, title, in, out, diffIn, diffOut);
+			}
+		}
+	}
 
 
     public enum State {
@@ -168,6 +161,7 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
 
     @Override
     public void connect(Bundle profileInfo) {
+		checkNotificationManager();
         Context context = mContext;
         Intent intent = Ikev2VPNImpl.getIntent(context);
         //从头开始连接
@@ -207,6 +201,11 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
 	@Override
 	public void addAppFilter(AppFilter appFilter) {
 		mAppFilter = appFilter;
+	}
+
+	@Override
+	public void addNotificationManager(INotificationManager notificationManager) {
+		this.mNotificationManager = notificationManager;
 	}
 
 
@@ -275,7 +274,6 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
         mTimeoutThread.start();
         mTimeoutHandle = new Handler(mTimeoutThread.getLooper());
 
-        createNotificationChannel();
         NetTraffics.getInstance().addByteCountListener(this);
     }
 
@@ -315,7 +313,9 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
     private void setNextProfile(VpnProfile profile) {
 		if (profile != null) {
 			String name = profile.getName();
-			VPNNotificationHelper.connecting(mVpnService, name, mContext.getResources().getString(R.string.vpn_connecting), NOTIFICATION_CHANNEL, VPN_STATE_NOTIFICATION_ID);
+			if (mNotificationManager != null) {
+				mNotificationManager.connecting(mVpnService, name);
+			}
 		}
         synchronized (this) {
             this.mNextProfile = profile;
@@ -523,36 +523,26 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
      */
     private void removeNotification() {
         mHandler.post(() -> {
-            VPNNotificationHelper.remove(mVpnService);
+			if (mNotificationManager != null) {
+				mNotificationManager.disconnect(mVpnService);
+			}
         });
-    }
-
-    /**
-     * Create a notification channel for Android 8+
-     */
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL, mContext.getString(R.string.permanent_notification_name), NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription(mContext.getString(R.string.permanent_notification_description));
-            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-            channel.setShowBadge(false);
-            NotificationManager notificationManager = mContext.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
     }
 
 
     private void stateChanged() {
-        if (mCurrentProfile != null) {
-            String name = mCurrentProfile.getName();
-            if (!TextUtils.isEmpty(name)) {
-                switch (mState) {
-                    case CONNECTED:
-                        VPNNotificationHelper.connected(mVpnService, name, mContext.getResources().getString(R.string.vpn_connected), NOTIFICATION_CHANNEL, VPN_STATE_NOTIFICATION_ID);
-                        break;
-                }
-            }
-        }
+		if (mCurrentProfile != null) {
+			String name = mCurrentProfile.getName();
+			if (!TextUtils.isEmpty(name)) {
+				switch (mState) {
+					case CONNECTED:
+						if (mNotificationManager != null) {
+							mNotificationManager.connected(mVpnService, name);
+						}
+						break;
+				}
+			}
+		}
         if (mState == State.CONNECTED
                 && mErrorState != ErrorState.NO_ERROR) {
             mErrorState = ErrorState.NO_ERROR;
@@ -752,9 +742,8 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
             /* even though the option displayed in the system dialog says "Configure"
              * we just use our main Activity */
             Context context = mContext;
-            Intent intent = new Intent(context, VPNConfig.pendingIntentClass);
-            PendingIntent pending = PendingIntent.getActivity(context, 0, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT);
+            Intent intent = new Intent(context, VPNConfig.ikev2VPNActivityPendingClass);
+            PendingIntent pending = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.setConfigureIntent(pending);
             return builder;
         }
@@ -1137,7 +1126,7 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
     }
 
     public static Intent getIntent(Context context) {
-        Intent intent = new Intent(context, vpnServiceClass);
+        Intent intent = new Intent(context, VPNConfig.ikev2VPNServiceClass);
         intent.putExtra(IVPNService.VPN_TYPE, IVPNService.VPN_TYPE_IKEV2);
         return intent;
     }
@@ -1167,7 +1156,10 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
     }
 
     private void stateChange(VPNState state) {
-        for (VPNCallback mCallback : mCallbacks) {
+		if (mNotificationManager != null) {
+			mNotificationManager.stateChange(mVpnService, state);
+		}
+		for (VPNCallback mCallback : mCallbacks) {
             mCallback.stateChange(state);
         }
     }
@@ -1206,4 +1198,10 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
             }
         });
     }
+
+	private void checkNotificationManager() {
+		if (mNotificationManager == null) {
+			throw new RuntimeException("Must set a notification manager , please call IVPN.addNotificationManager()");
+		}
+	}
 }

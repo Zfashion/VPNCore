@@ -1,14 +1,13 @@
-package com.base.vpn.utils;
+package com.module.vpncore.util;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.VpnService;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.base.vpn.BuildConfig;
+import com.base.vpn.utils.VPNLog;
 import com.data.DataStore;
 
 import java.util.ArrayList;
@@ -16,11 +15,8 @@ import java.util.List;
 import java.util.Set;
 
 public class VPNAppFilterHelper {
-    private static final String TAG = "VPNAppFilterHelper";
-    private String VPN_SERVICE;
 
-    private VPNAppFilterHelper() {
-    }
+    private String VPN_SERVICE;
 
     public VPNAppFilterHelper(String name) {
         this.VPN_SERVICE = name;
@@ -39,9 +35,7 @@ public class VPNAppFilterHelper {
                     //需要代理的app
                     finalList.add(pkg);
                 } else {
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, VPN_SERVICE + " -> exclude :" + pkg);
-                    }
+                    VPNLog.d(VPN_SERVICE + " -> exclude :" + pkg);
                 }
             }
             for (String pkg : finalList) {

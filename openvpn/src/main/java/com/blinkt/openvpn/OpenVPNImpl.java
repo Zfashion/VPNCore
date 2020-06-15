@@ -35,7 +35,6 @@ import androidx.annotation.RequiresApi;
 import com.base.vpn.IVPN;
 import com.base.vpn.IVPNService;
 import com.base.vpn.VPNConfig;
-import com.base.vpn.utils.VPNNotificationHelper;
 import com.blinkt.openvpn.core.CIDRIP;
 import com.blinkt.openvpn.core.Connection;
 import com.blinkt.openvpn.core.ConnectionStatus;
@@ -114,7 +113,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private VpnServiceBuilderCreator mBuilderCreator;
     private String mServerNodeName;
     private IVPN.AppFilter mAppFilter;
-    public static Class vpnServiceClass;
+    private INotificationManager mNotificationManager;
 
     public OpenVPNImpl(@NonNull VpnService mVpnService) {
         this.mVpnService = mVpnService;
@@ -152,7 +151,9 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
         // Always show notification here to avoid problem with startForeground timeout
         VpnStatus.logInfo(R.string.building_configration);
         VpnStatus.updateStateString("VPN_GENERATE_CONFIG", "", R.string.building_configration, ConnectionStatus.LEVEL_START);
-        VPNNotificationHelper.connecting(mVpnService, mServerNodeName, mContext.getResources().getString(R.string.vpn_connecting), NOTIFICATION_CHANNEL_NEWSTATUS_ID, NOTIFICATION_ID);
+        if (mNotificationManager != null) {
+            mNotificationManager.connecting(mVpnService,mServerNodeName);
+        }
         if (intent != null && intent.hasExtra(mContext.getPackageName() + ".profileUUID")) {
             String profileUUID = intent.getStringExtra(mContext.getPackageName() + ".profileUUID");
             int profileVersion = intent.getIntExtra(mContext.getPackageName() + ".profileVersion", 0);
@@ -228,6 +229,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     @Override
     public void connect(Bundle data) {
+        checkNotificationManager();
         Intent startVPN = getIntent(mContext);
         startVPN.putExtras(data);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -267,6 +269,11 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     @Override
     public void addAppFilter(AppFilter appFilter) {
         mAppFilter = appFilter;
+    }
+
+    @Override
+    public void addNotificationManager(INotificationManager notificationManager) {
+        this.mNotificationManager = notificationManager;
     }
 
     @Override
@@ -380,7 +387,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
 
     PendingIntent getGraphPendingIntent() {
-        Class activityClass = VPNConfig.pendingIntentClass;
+        Class activityClass = VPNConfig.openVPNActivityPendingClass;
         Intent intent = new Intent(mContext, activityClass);
         intent.putExtra("PAGE", "graph");
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -981,7 +988,9 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
         switch (level) {
             case LEVEL_CONNECTED:
                 isStarting = true;
-                VPNNotificationHelper.connected(mVpnService, mServerNodeName, mContext.getResources().getString(R.string.vpn_connected), NOTIFICATION_CHANNEL_NEWSTATUS_ID, NOTIFICATION_ID);
+                if (mNotificationManager != null) {
+                    mNotificationManager.connected(mVpnService,mServerNodeName);
+                }
                 stateChange(VPNState.CONNECTED);
                 break;
             case LEVEL_NONETWORK:
@@ -1012,16 +1021,13 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     @Override
     public void updateByteCount(long in, long out, long diffIn, long diffOut) {
         if (mDisplayBytecount) {
-            String netstat = String.format(mContext.getString(R.string.statusline_bytecount),
-                    humanReadableByteCount(in, false, mContext.getResources()),
-                    humanReadableByteCount(diffIn / OpenVPNManagement.mBytecountInterval, true, mContext.getResources()),
-                    humanReadableByteCount(out, false, mContext.getResources()),
-                    humanReadableByteCount(diffOut / OpenVPNManagement.mBytecountInterval, true, mContext.getResources()));
             String title = mServerNodeName;
             if (TextUtils.isEmpty(title)) {
                 title = mContext.getString(mContext.getApplicationInfo().labelRes);
             }
-            VPNNotificationHelper.connected(mVpnService, title, netstat, NOTIFICATION_CHANNEL_NEWSTATUS_ID, NOTIFICATION_ID);
+            if (mNotificationManager != null) {
+                mNotificationManager.byteCountChange(mVpnService, title, in, out, diffIn, diffOut);
+            }
         }
     }
 
@@ -1103,7 +1109,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     }
 
     public static Intent getIntent(Context context) {
-        Intent intent = new Intent(context, vpnServiceClass);
+        Intent intent = new Intent(context, VPNConfig.openVPNServiceClass);
         intent.putExtra(IVPNService.VPN_TYPE, IVPNService.VPN_TYPE_OPEN);
         return intent;
     }
@@ -1115,8 +1121,17 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     }
 
     private void stateChange(VPNState state) {
+        if (mNotificationManager != null) {
+            mNotificationManager.stateChange(mVpnService, state);
+        }
         for (VPNCallback mCallback : mCallbacks) {
             mCallback.stateChange(state);
+        }
+    }
+
+    private void checkNotificationManager() {
+        if (mNotificationManager == null) {
+            throw new RuntimeException("Must set a notification manager , please call IVPN.addNotificationManager()");
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.module.vpncore;
+package com.module.vpncore.vpn;
 
 import android.app.Activity;
 import android.app.Service;
@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
@@ -23,12 +24,14 @@ import com.blinkt.openvpn.core.ConfigParser;
 import com.blinkt.openvpn.core.Connection;
 import com.blinkt.openvpn.core.ProfileManager;
 import com.blinkt.openvpn.core.VpnStatus;
+import com.module.vpncore.R;
+import com.module.vpncore.util.DefaultNotificationManager;
+import com.module.vpncore.util.VPNAppFilterHelper;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 
 public class OpenVPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.AppFilter {
@@ -235,8 +238,6 @@ public class OpenVPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.A
 
     public OpenVPNOperation(@NonNull Context context) {
         mContext = context.getApplicationContext();
-        //设定VPNService承载类
-        OpenVPNImpl.vpnServiceClass = VPNService.class;
         initProfile();
     }
 
@@ -312,6 +313,12 @@ public class OpenVPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.A
             mVPN = ((OpenVPNImpl.OpenVPNHandleBinder) service).getVPNService();
             mVPN.addCallback(OpenVPNOperation.this);
             mVPN.addAppFilter(OpenVPNOperation.this);
+            /**
+             *  根据实际业务设置通知管理器
+             *
+             *  警告 : 必须设置通知管理器 否则将会抛出异常 {@link RuntimeException}
+             */
+            mVPN.addNotificationManager(new DefaultNotificationManager());
             if (mNeedBindAfterHandle) {
                 mNeedBindAfterHandle = false;
                 if (isConnected() || isConnecting()) {
@@ -428,9 +435,9 @@ public class OpenVPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.A
 
     @Override
     public void applyFilter(Context context, VpnService.Builder builder) {
-        // TODO: 2020-06-15 二选一
-//        builder.addDisallowedApplication()
-//        builder.addAllowedApplication()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            new VPNAppFilterHelper("open_vpn").applyFilter(context,builder);
+        }
     }
 
     private void unbindService() {

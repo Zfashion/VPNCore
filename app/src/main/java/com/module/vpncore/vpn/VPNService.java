@@ -3,7 +3,7 @@
  * Distributed under the GNU GPL v2 with additional terms. For full terms see the file doc/LICENSE.txt
  */
 
-package com.module.vpncore;
+package com.module.vpncore.vpn;
 
 import android.content.Intent;
 import android.net.VpnService;
@@ -13,7 +13,6 @@ import android.os.IBinder;
 import com.base.vpn.IVPN;
 import com.base.vpn.IVPNService;
 import com.base.vpn.utils.VPNLog;
-import com.base.vpn.utils.VPNNotificationHelper;
 import com.blinkt.openvpn.OpenVPNImpl;
 
 import org.ikev2.android.logic.Ikev2VPNImpl;
@@ -78,7 +77,6 @@ public class VPNService extends VpnService implements IVPNService.VpnServiceBuil
         if (mVPNImpl != null) {
             mVPNImpl.onRevoke();
         }
-        VPNNotificationHelper.remove(this);
     }
 
     @Override
@@ -118,6 +116,14 @@ public class VPNService extends VpnService implements IVPNService.VpnServiceBuil
         IVPNService vpnService = mVPNImpl;
         if (vpnService != null) {
             vpnService.addAppFilter(appFilter);
+        }
+    }
+
+    @Override
+    public void addNotificationManager(INotificationManager notificationManager) {
+        IVPNService vpnService = mVPNImpl;
+        if (vpnService != null) {
+            vpnService.addNotificationManager(notificationManager);
         }
     }
 

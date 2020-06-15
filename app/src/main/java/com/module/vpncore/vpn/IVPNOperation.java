@@ -1,4 +1,4 @@
-package com.module.vpncore;
+package com.module.vpncore.vpn;
 
 import android.app.Activity;
 import android.content.Intent;

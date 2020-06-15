@@ -1,4 +1,4 @@
-package com.module.vpncore;
+package com.module.vpncore.vpn;
 
 import android.app.Activity;
 import android.app.Service;
@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.VpnService;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
@@ -18,6 +19,9 @@ import androidx.annotation.NonNull;
 
 import com.base.vpn.IVPN;
 import com.base.vpn.utils.VPNLog;
+import com.module.vpncore.R;
+import com.module.vpncore.util.DefaultNotificationManager;
+import com.module.vpncore.util.VPNAppFilterHelper;
 
 import org.ikev2.android.data.VpnProfile;
 import org.ikev2.android.data.VpnType;
@@ -49,7 +53,6 @@ public class Ikev2VPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.
 
     public Ikev2VPNOperation(@NonNull Context mContext) {
         this.mContext = mContext.getApplicationContext();
-        Ikev2VPNImpl.vpnServiceClass = VPNService.class;
         initCert();
     }
 
@@ -81,9 +84,9 @@ public class Ikev2VPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.
 
     @Override
     public void applyFilter(Context context, VpnService.Builder builder) {
-        // TODO: 2020-06-15 二选一
-//        builder.addDisallowedApplication()
-//        builder.addAllowedApplication()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            new VPNAppFilterHelper("ikev2_vpn").applyFilter(context,builder);
+        }
     }
 
     private static class LoadCertificatesTask extends AsyncTask<Void, Void, TrustedCertificateManager> {
@@ -202,6 +205,12 @@ public class Ikev2VPNOperation implements IVPNOperation, IVPN.VPNCallback, IVPN.
             VPNLog.d("service bind success!");
             mVPN = ((Ikev2VPNImpl.Ikev2VPNHandleBinder) service).getVPNService();
             mVPN.addCallback(Ikev2VPNOperation.this);
+            /**
+             *  根据实际业务设置通知管理器
+             *
+             *  警告 : 必须设置通知管理器 否则将会抛出异常 {@link RuntimeException}
+             */
+            mVPN.addNotificationManager(new DefaultNotificationManager());
             if (mNeedBindAfterHandle) {
                 mNeedBindAfterHandle = false;
                 if (isConnected() || isConnecting()) {
