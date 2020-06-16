@@ -38,13 +38,4 @@ public interface IDataStore {
     boolean remove(String key);
 
     boolean clear();
-
-
-    class DataStoreFactory{
-        // TODO: 2020-06-09
-    }
-
-    class EncryptorFactory{
-        // TODO: 2020-06-09
-    }
 }

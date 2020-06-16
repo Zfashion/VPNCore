@@ -22,7 +22,6 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 
 import com.base.vpn.IVPN;
 import com.base.vpn.IVPNService;
@@ -159,15 +158,20 @@ public class Ikev2VPNImpl implements IVPNService, Runnable, IVPN.ByteCountListen
         this.mCallbacks = new Vector<>();
     }
 
-    @Override
-    public void connect(Bundle profileInfo) {
+	@Override
+	public void connect(Bundle profileInfo) {
 		checkNotificationManager();
-        Context context = mContext;
-        Intent intent = Ikev2VPNImpl.getIntent(context);
-        //从头开始连接
-        profileInfo.putBoolean(Ikev2VPNImpl.KEY_IS_RETRY, false);
-        intent.putExtras(profileInfo);
-        ContextCompat.startForegroundService(context, intent);
+		Context context = mContext;
+		Intent intent = Ikev2VPNImpl.getIntent(context);
+		//从头开始连接
+		profileInfo.putBoolean(Ikev2VPNImpl.KEY_IS_RETRY, false);
+		intent.putExtras(profileInfo);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			context.startForegroundService(intent);
+		} else {
+			// Pre-O behavior.
+			context.startService(intent);
+		}
     }
 
     @Override

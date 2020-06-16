@@ -7,8 +7,7 @@ package com.blinkt.openvpn.core;
 
 import android.os.Build;
 import android.text.TextUtils;
-
-import androidx.core.util.Pair;
+import android.util.Pair;
 
 import com.blinkt.openvpn.VpnProfile;
 

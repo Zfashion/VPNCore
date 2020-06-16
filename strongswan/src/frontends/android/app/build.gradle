@@ -4,7 +4,6 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-       // applicationId "org.strongswan.android"
         minSdkVersion 19
         targetSdkVersion 28
         versionCode 69
@@ -30,7 +29,7 @@ android {
 //        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 //    }
 //
-//    clean.dependsOn 'cleanNative'
+//    clean.dependsOn 'cleanNative
 
     buildTypes {
         release {
@@ -60,11 +59,8 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.preference:preference:1.1.0'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.material:material:1.0.0'
     testImplementation 'junit:junit:4.12'
+    implementation 'androidx.annotation:annotation:1.1.0'
     implementation project(path: ':basevpn')
     implementation project(path: ':obfuscation_annotation')
     implementation project(path: ':data_store')
