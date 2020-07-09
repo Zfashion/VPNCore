@@ -20,6 +20,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
@@ -27,14 +28,16 @@ import android.os.RemoteException;
 import android.system.OsConstants;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 import com.base.vpn.IVPN;
 import com.base.vpn.IVPNService;
+import com.base.vpn.NetWorkChangeCallback;
+import com.base.vpn.NetWorkChangeReceiver;
 import com.base.vpn.VPNConfig;
+import com.base.vpn.utils.VPNLog;
 import com.blinkt.openvpn.core.CIDRIP;
 import com.blinkt.openvpn.core.Connection;
 import com.blinkt.openvpn.core.ConnectionStatus;
@@ -63,7 +66,7 @@ import java.util.Vector;
 import static com.blinkt.openvpn.core.ConnectionStatus.LEVEL_CONNECTED;
 import static com.blinkt.openvpn.core.ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT;
 
-public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handler.Callback, IVPN.ByteCountListener {
+public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handler.Callback, IVPN.ByteCountListener , NetWorkChangeCallback {
 
     public static final String START_SERVICE = "com.blinkt.openvpn.START_SERVICE";
     public static final String START_SERVICE_STICKY = "com.blinkt.openvpn.START_SERVICE_STICKY";
@@ -88,7 +91,6 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private final NetworkSpace mRoutes = new NetworkSpace();
     private final NetworkSpace mRoutesv6 = new NetworkSpace();
     private final Object mProcessLock = new Object();
-    private String lastChannel;
     private Thread mProcessThread = null;
     private VpnProfile mProfile;
     private String mDomain = null;
@@ -98,12 +100,11 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private DeviceStateReceiver mDeviceStateReceiver;
     private boolean mDisplayBytecount = false;
     private boolean mStarting = false;
-    private long mConnecttime;
 
     private String mLastTunCfg;
     private String mRemoteGW;
-    private Handler guiHandler;
-    private Toast mlastToast;
+    private Handler mConnectTimeoutHandler;
+    private HandlerThread mConnectTimeoutHandlerThread;
     private Runnable mOpenVPNThread;
     private OpenVPNManagement mManagement;
 
@@ -114,6 +115,9 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private String mServerNodeName;
     private IVPN.AppFilter mAppFilter;
     private INotificationManager mNotificationManager;
+    private NetWorkChangeReceiver mNetWorkChangeReceiver;
+    private ConnectionStatus mCurrentConnectionStatus;
+    private boolean isStopService;
 
     public OpenVPNImpl(@NonNull VpnService mVpnService) {
         this.mVpnService = mVpnService;
@@ -141,8 +145,6 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
         }
         VpnStatus.addStateListener(this);
         VpnStatus.addByteCountListener(this);
-
-        guiHandler = new Handler(mVpnService.getMainLooper());
 
         if (intent != null && START_SERVICE.equals(intent.getAction())) {
             return Service.START_NOT_STICKY;
@@ -241,10 +243,8 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     @Override
     public void disconnect() {
-        try {
-            stopVPN(false);
-        } catch (Throwable e) {
-        }
+        isStopService = true;
+        onRevoke();
     }
 
     @Override
@@ -302,25 +302,24 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
         return false;
     }
 
-
-    private boolean stopVPN(boolean replaceConnection) throws RemoteException {
-        onRevoke();
-        boolean result = false;
-        if (getManagement() != null) {
-            result = getManagement().stopVPN(replaceConnection);
-        }
-        //laceHolderService.startService(mContext);
-        mVpnService.stopSelf();
-        return result;
-    }
-
     @Override
     public void onRevoke() {
         try {
             VpnStatus.logError(R.string.permission_revoked);
-            mManagement.stopVPN(false);
-            stateChange(VPNState.DISCONNECTED);
-            endVpnService();
+            OpenVPNManagement management = getManagement();
+            if (management != null) {
+                //如果OpenVPNThread已经终止那么 management.stopVPN(false); 将会返回false
+                boolean result = management.stopVPN(false);
+                //返回true  说明这次stopVPN操作会触发endVpnService
+                VPNLog.d("management.stopVPN = " + result);
+                //返回false 说明OpenVPNThread线程之前已经终止 但是服务没销毁
+                if (!result){
+                    endVpnService(true);
+                }
+            }else {
+                endVpnService(true);
+            }
+            //endVpnService();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -328,29 +327,45 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     @Override
     public void onCreate() {
-
+        mConnectTimeoutHandlerThread = new HandlerThread("connect_timeout");
+        mConnectTimeoutHandlerThread.start();
+        mConnectTimeoutHandler = new Handler(mConnectTimeoutHandlerThread.getLooper());
+        mNetWorkChangeReceiver = NetWorkChangeReceiver.register(this);
     }
 
     // Similar to revoke but do not try to stop process
     public void openVpnStopped() {
-        endVpnService();
+        endVpnService(isStopService);
     }
 
-    private void endVpnService() {
+    private void endVpnService(boolean stopService) {
+        VPNLog.d("VPNService:endVpnService ");
+        boolean updateState = true;
         synchronized (mProcessLock) {
-            mProcessThread = null;
-        }
-        VpnStatus.removeByteCountListener(this);
-        unregisterDeviceStateReceiver();
-        ProfileManager.setConntectedVpnProfileDisconnected(mContext);
-        mOpenVPNThread = null;
-        if (!mStarting) {
-            mVpnService.stopForeground(!mNotificationAlwaysVisible);
-
-            if (!mNotificationAlwaysVisible) {
-                mVpnService.stopSelf();
-                VpnStatus.removeStateListener(this);
+            if (stopService){
+                updateState = false;
+                stateTransform(ConnectionStatus.LEVEL_NOTCONNECTED);
             }
+            if (!mStarting && stopService) {
+                isStopService = false;
+                if (mProcessThread != null) {
+                    mProcessThread = null;
+                    mOpenVPNThread = null;
+                    VPNLog.d("VPNService:endVpnService stopForeground," + this);
+                    mVpnService.stopForeground(!mNotificationAlwaysVisible);
+                    if (!mNotificationAlwaysVisible) {
+                        VPNLog.d("VPNService:endVpnService stopSelf," + this);
+                        mVpnService.stopSelf();
+                    }
+                    ProfileManager.setConntectedVpnProfileDisconnected(mContext);
+                }
+            }
+        }
+        unregisterDeviceStateReceiver();
+        VpnStatus.removeByteCountListener(this);
+        VpnStatus.removeStateListener(this);
+        if (updateState){
+            stateTransform(ConnectionStatus.LEVEL_NOTCONNECTED);
         }
     }
 
@@ -397,40 +412,48 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     }
 
-    synchronized void registerDeviceStateReceiver(OpenVPNManagement magnagement) {
+    private void registerDeviceStateReceiver() {
+        VPNLog.d("registerDeviceStateReceiver");
         // Registers BroadcastReceiver to track network connection changes.
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        mDeviceStateReceiver = new DeviceStateReceiver(magnagement);
-
+        synchronized (this){
+            if (mDeviceStateReceiver != null){
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+                filter.addAction(Intent.ACTION_SCREEN_OFF);
+                filter.addAction(Intent.ACTION_SCREEN_ON);
+                if (mVpnService != null) {
+                    mVpnService.registerReceiver(mDeviceStateReceiver, filter);
+                    VPNLog.d("mVpnService.registerReceiver(mDeviceStateReceiver, filter);");
+                }
+            }
+        }
         // Fetch initial network state
-        mDeviceStateReceiver.networkStateChange(mContext);
-
-        mVpnService.registerReceiver(mDeviceStateReceiver, filter);
-        VpnStatus.addByteCountListener(mDeviceStateReceiver);
-
+        if (mDeviceStateReceiver != null) {
+            VpnStatus.addByteCountListener(mDeviceStateReceiver);
+        }
         /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             addLollipopCMListener(); */
     }
 
-    synchronized void unregisterDeviceStateReceiver() {
-        if (mDeviceStateReceiver != null)
-            try {
-                VpnStatus.removeByteCountListener(mDeviceStateReceiver);
-                mVpnService.unregisterReceiver(mDeviceStateReceiver);
-            } catch (IllegalArgumentException iae) {
-                // I don't know why  mContext happens:
-                // java.lang.IllegalArgumentException: Receiver not registered: com.blinkt.openvpn.NetworkSateReceiver@41a61a10
-                // Ignore for now ...
-                iae.printStackTrace();
+    private void unregisterDeviceStateReceiver() {
+        VPNLog.d("call: unregisterDeviceStateReceiver");
+        if (mDeviceStateReceiver != null){
+            synchronized (this){
+                try {
+                    mVpnService.unregisterReceiver(mDeviceStateReceiver);
+                    VPNLog.d("mVpnService.unregisterReceiver(mDeviceStateReceiver);");
+                } catch (IllegalArgumentException iae) {
+                    // I don't know why  mContext happens:
+                    // java.lang.IllegalArgumentException: Receiver not registered: com.blinkt.openvpn.NetworkSateReceiver@41a61a10
+                    // Ignore for now ...
+                    iae.printStackTrace();
+                }
             }
-        mDeviceStateReceiver = null;
-
+            VpnStatus.removeByteCountListener(mDeviceStateReceiver);
+            mDeviceStateReceiver = null;
+        }
         /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             removeLollipopCMListener();*/
-
     }
 
     public void userPause(boolean shouldBePaused) {
@@ -454,7 +477,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             mProfile.writeConfigFile(mContext);
         } catch (IOException e) {
             VpnStatus.logException("Error writing config file", e);
-            endVpnService();
+            endVpnService(true);
             return;
         }
         String nativeLibraryDirectory = mContext.getApplicationInfo().nativeLibraryDir;
@@ -479,7 +502,7 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             mManagement = managementThread;
             VpnStatus.logInfo("started Socket Thread");
         } else {
-            endVpnService();
+            endVpnService(true);
             return;
         }
         mOpenVPNThread = new OpenVPNThread(this, argv, nativeLibraryDirectory);
@@ -488,21 +511,19 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             mProcessThread = new Thread(mOpenVPNThread, "OpenVPNProcessThread");
             mProcessThread.start();
         }
-
-        new Handler(mVpnService.getMainLooper()).post(() -> {
-                    if (mDeviceStateReceiver != null) {
-                        unregisterDeviceStateReceiver();
-                    }
-                    registerDeviceStateReceiver(mManagement);
-                }
-        );
+        resetTimeout();
+        //15秒超时
+        mConnectTimeoutHandler.postDelayed(mConnectTimeoutRun, 10 * 1000L);
+        mDeviceStateReceiver = new DeviceStateReceiver(getContext(), mManagement);
+        registerDeviceStateReceiver();
+        mDeviceStateReceiver.networkStateChange(mContext);
     }
-
 
     private void stopOldOpenVPNProcess() {
         if (mManagement != null) {
-            if (mOpenVPNThread != null)
+            if (mOpenVPNThread != null){
                 ((OpenVPNThread) mOpenVPNThread).setReplaceConnection();
+            }
             if (mManagement.stopVPN(true)) {
                 // an old was asked to exit, wait 1s
                 try {
@@ -536,17 +557,15 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
                 mManagement.stopVPN(true);
             }
         }
-        try {
-            if (mDeviceStateReceiver != null) {
-                mContext.unregisterReceiver(mDeviceStateReceiver);
-            }
-        } catch (Throwable e) {
-
-        }
+        resetTimeout();
+        releaseTimeoutHandle();
+        unregisterDeviceStateReceiver();
         // Just in case unregister for state
         VpnStatus.removeStateListener(this);
+        NetWorkChangeReceiver.unRegister(this, mNetWorkChangeReceiver);
         VpnStatus.flushLog();
     }
+
 
     @Override
     @NotProguard
@@ -957,22 +976,24 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
 
     @Override
     public void updateState(String state, String logmessage, int resid, ConnectionStatus level) {
-        stateTransform(level);
+        if (level != ConnectionStatus.LEVEL_NOTCONNECTED){
+            stateTransform(level);
+        }else {
+            VPNLog.d("ignore updateState : LEVEL_NOTCONNECTED");
+        }
         // If the process is not running, ignore any state,
         // Notification should be invisible in mContext state
 //        doSendBroadcast(state, level);
         if (mProcessThread == null && !mNotificationAlwaysVisible) {
             return;
         }
-        String channel = NOTIFICATION_CHANNEL_NEWSTATUS_ID;
         // Display byte count only after being connected
         {
             if (level == LEVEL_CONNECTED) {
                 mDisplayBytecount = true;
-                mConnecttime = System.currentTimeMillis();
-                if (!runningOnAndroidTV()) {
-                    channel = NOTIFICATION_CHANNEL_NEWSTATUS_ID;
-                }
+//                if (!runningOnAndroidTV()) {
+//                    channel = NOTIFICATION_CHANNEL_NEWSTATUS_ID;
+//                }
             } else {
                 mDisplayBytecount = false;
             }
@@ -983,33 +1004,63 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
             //showNotification(VpnStatus.getLastCleanLogMessage(mContext), VpnStatus.getLastCleanLogMessage(mContext), channel, 0, level);
         }
     }
+
     private boolean isStarting = false;
+
     private void stateTransform(ConnectionStatus level) {
+        VPNLog.d("stateTransform : " + level.name());
         switch (level) {
             case LEVEL_CONNECTED:
+                resetTimeout();
                 isStarting = true;
                 if (mNotificationManager != null) {
                     mNotificationManager.connected(mVpnService,mServerNodeName);
                 }
+                mCurrentConnectionStatus = level;
                 stateChange(VPNState.CONNECTED);
                 break;
-            case LEVEL_NONETWORK:
             case LEVEL_NOTCONNECTED:
-                if (isStarting){
+                resetTimeout();
+                if (isStarting || isStopService) {
+                    isStarting = false;
                     stateChange(VPNState.DISCONNECTED);
+                }
+                break;
+            case LEVEL_NONETWORK:
+                if (isStarting && mCurrentConnectionStatus != LEVEL_CONNECTED) {
+                    VPNLog.d("networkChange-> disconnect");
+                    stateChange(VPNState.CONNECTING);//迫不得已 否则会认为是切换端口
+                    disconnect();
                 }
                 break;
             case LEVEL_AUTH_FAILED:
             case LEVEL_CONNECTING_NO_SERVER_REPLY_YET:
-                isStarting = true;
-                stateChange(VPNState.CONNECT_FAIL);
+                if (mCurrentConnectionStatus != LEVEL_CONNECTED) {
+                    isStarting = true;
+                    mCurrentConnectionStatus = level;
+                    stateChange(VPNState.CONNECT_FAIL);
+                }
                 break;
-            case LEVEL_CONNECTING_SERVER_REPLIED:
+            case LEVEL_CONNECTING_SERVER_REPLIED: {
+                isStarting = true;
+                mCurrentConnectionStatus = level;
+                stateChange(VPNState.CONNECTING);
+            }
+            break;
             case LEVEL_WAITING_FOR_USER_INPUT:
             case LEVEL_START:
                 isStarting = true;
+                mCurrentConnectionStatus = level;
                 stateChange(VPNState.CONNECTING);
             break;
+        }
+    }
+
+
+    @Override
+    public void networkChange(boolean available) {
+        if (!available){
+            stateTransform(ConnectionStatus.LEVEL_NONETWORK);
         }
     }
 
@@ -1132,6 +1183,32 @@ public class OpenVPNImpl implements IVPNService, VpnStatus.StateListener, Handle
     private void checkNotificationManager() {
         if (mNotificationManager == null) {
             throw new RuntimeException("Must set a notification manager , please call IVPN.addNotificationManager()");
+        }
+    }
+
+    @SuppressWarnings({"Anonymous2MethodRef", "Convert2Lambda"})
+    private Runnable mConnectTimeoutRun = new Runnable() {
+        @Override
+        public void run() {
+            if (mCurrentConnectionStatus != LEVEL_CONNECTED){
+                VPNLog.d("OpenVPNImpl->mConnectTimeoutRun : connect timeout");
+                disconnect();
+            }
+        }
+    };
+
+    private void resetTimeout(){
+        mConnectTimeoutHandler.removeMessages(0);
+        mConnectTimeoutHandler.removeCallbacks(mConnectTimeoutRun);
+        VPNLog.d("OpenVPNImpl->resetTimeout()");
+    }
+
+    private void releaseTimeoutHandle() {
+        if (mConnectTimeoutHandlerThread != null) {
+            if (mConnectTimeoutHandlerThread.isAlive()){
+                VPNLog.d("OpenVPNImpl->releaseTimeoutHandle()");
+                mConnectTimeoutHandlerThread.quitSafely();
+            }
         }
     }
 }

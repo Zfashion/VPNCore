@@ -12,9 +12,11 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.NetworkInfo.State;
 import android.os.Handler;
+import android.os.Looper;
 
 import com.base.vpn.IVPN;
 import com.base.vpn.VPNConfig;
+import com.base.vpn.utils.VPNLog;
 import com.protocol.openvpn.R;
 
 import java.util.LinkedList;
@@ -122,32 +124,39 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
         }
     }
 
-    public DeviceStateReceiver(OpenVPNManagement magnagement) {
+    public DeviceStateReceiver(Context context,OpenVPNManagement magnagement) {
         super();
         mManagement = magnagement;
         mManagement.setPauseCallback(this);
-        mDisconnectHandler = new Handler();
+        if (context.getMainLooper() == Looper.myLooper()){
+            mDisconnectHandler = new Handler();
+        }else {
+            mDisconnectHandler = new Handler(context.getMainLooper());
+        }
     }
 
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
         if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
+            VPNLog.d("onReceive : CONNECTIVITY_ACTION");
             networkStateChange(context);
         } else if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+            VPNLog.d("onReceive : ACTION_SCREEN_OFF");
             boolean screenOffPause = VPNConfig.dataStore.getBoolean("screenoff", false);
 
             if (screenOffPause) {
-                if (ProfileManager.getLastConnectedVpn() != null && !ProfileManager.getLastConnectedVpn().mPersistTun)
+                if (ProfileManager.getLastConnectedVpn() != null && !ProfileManager.getLastConnectedVpn().mPersistTun){
                     VpnStatus.logError(R.string.screen_nopersistenttun);
-
+                }
                 screen = connectState.PENDINGDISCONNECT;
                 fillTrafficData();
-                if (network == connectState.DISCONNECTED || userpause == connectState.DISCONNECTED)
+                if (network == connectState.DISCONNECTED || userpause == connectState.DISCONNECTED){
                     screen = connectState.DISCONNECTED;
+                }
             }
         } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+            VPNLog.d("onReceive : ACTION_SCREEN_ON");
             // Network was disabled because screen off
             boolean connected = shouldBeConnected();
             screen = connectState.SHOULDBECONNECTED;
@@ -155,12 +164,12 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             /* We should connect now, cancel any outstanding disconnect timer */
             mDisconnectHandler.removeCallbacks(mDelayDisconnectRunnable);
             /* should be connected has changed because the screen is on now, connect the VPN */
-            if (shouldBeConnected() != connected)
+            if (shouldBeConnected() != connected){
                 mManagement.resume();
-            else if (!shouldBeConnected())
+            } else if (!shouldBeConnected()){
                 /*Update the reason why we are still paused */
                 mManagement.pause(getPauseReason());
-
+            }
         }
     }
 
@@ -184,11 +193,13 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             netstatestring = "not connected";
         } else {
             String subtype = networkInfo.getSubtypeName();
-            if (subtype == null)
+            if (subtype == null){
                 subtype = "";
+            }
             String extrainfo = networkInfo.getExtraInfo();
-            if (extrainfo == null)
+            if (extrainfo == null){
                 extrainfo = "";
+            }
 
 			/*
             if(networkInfo.getType()==android.net.ConnectivityManager.TYPE_WIFI) {
@@ -199,9 +210,7 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
 				subtype += wifiinfo.getNetworkId();
 			}*/
 
-
-            netstatestring = String.format("%2$s %4$s to %1$s %3$s", networkInfo.getTypeName(),
-                    networkInfo.getDetailedState(), extrainfo, subtype);
+            netstatestring = String.format("%2$s %4$s to %1$s %3$s", networkInfo.getTypeName(), networkInfo.getDetailedState(), extrainfo, subtype);
         }
 
         if (networkInfo != null && networkInfo.getState() == State.CONNECTED) {
@@ -213,12 +222,11 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             boolean sameNetwork;
             if (lastConnectedNetwork == null
                     || lastConnectedNetwork.getType() != networkInfo.getType()
-                    || !equalsObj(lastConnectedNetwork.getExtraInfo(), networkInfo.getExtraInfo())
-            )
+                    || !equalsObj(lastConnectedNetwork.getExtraInfo(), networkInfo.getExtraInfo())){
                 sameNetwork = false;
-            else
+            } else{
                 sameNetwork = true;
-
+            }
             /* Same network, connection still 'established' */
             if (pendingDisconnect && sameNetwork) {
                 mDisconnectHandler.removeCallbacks(mDelayDisconnectRunnable);
@@ -227,16 +235,18 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             } else {
                 /* Different network or connection not established anymore */
 
-                if (screen == connectState.PENDINGDISCONNECT)
+                if (screen == connectState.PENDINGDISCONNECT){
                     screen = connectState.DISCONNECTED;
+                }
 
                 if (shouldBeConnected()) {
                     mDisconnectHandler.removeCallbacks(mDelayDisconnectRunnable);
 
-                    if (pendingDisconnect || !sameNetwork)
+                    if (pendingDisconnect || !sameNetwork){
                         mManagement.networkChange(sameNetwork);
-                    else
+                    } else{
                         mManagement.resume();
+                    }
                 }
 
                 lastNetwork = newnet;
@@ -248,17 +258,14 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
             if (sendusr1) {
                 network = connectState.PENDINGDISCONNECT;
                 mDisconnectHandler.postDelayed(mDelayDisconnectRunnable, DISCONNECT_WAIT * 1000);
-
             }
         }
 
-
-        if (!netstatestring.equals(lastStateMsg))
+        if (!netstatestring.equals(lastStateMsg)){
             VpnStatus.logInfo(R.string.netstatus, netstatestring);
-        VpnStatus.logDebug(String.format("Debug state info: %s, pause: %s, shouldbeconnected: %s, network: %s ",
-                netstatestring, getPauseReason(), shouldBeConnected(), network));
+        }
+        VpnStatus.logDebug(String.format("Debug state info: %s, pause: %s, shouldbeconnected: %s, network: %s ", netstatestring, getPauseReason(), shouldBeConnected(), network));
         lastStateMsg = netstatestring;
-
     }
 
 
@@ -267,8 +274,9 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
     }
 
     private boolean shouldBeConnected() {
-        return (screen == connectState.SHOULDBECONNECTED && userpause == connectState.SHOULDBECONNECTED &&
-                network == connectState.SHOULDBECONNECTED);
+        return (screen == connectState.SHOULDBECONNECTED
+                && userpause == connectState.SHOULDBECONNECTED
+                && network == connectState.SHOULDBECONNECTED);
     }
 
     private pauseReason getPauseReason() {
@@ -285,9 +293,7 @@ public class DeviceStateReceiver extends BroadcastReceiver implements IVPN.ByteC
     }
 
     private NetworkInfo getCurrentNetworkInfo(Context context) {
-        ConnectivityManager conn = (ConnectivityManager)
-                context.getSystemService(Context.CONNECTIVITY_SERVICE);
-
+        ConnectivityManager conn = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         return conn.getActiveNetworkInfo();
     }
 }
